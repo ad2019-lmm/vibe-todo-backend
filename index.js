@@ -44,9 +44,28 @@ async function connectDB() {
     return true;
   } catch (error) {
     console.error('❌ MongoDB 연결 실패:');
-    console.error('에러 코드:', error.code);
+    console.error('에러 타입:', error.name);
+    console.error('에러 코드:', error.code || '없음');
     console.error('에러 메시지:', error.message);
-    console.error('전체 에러:', error);
+    
+    // IP 화이트리스트 문제 체크 (가장 흔한 Heroku 문제)
+    if (error.name === 'MongooseServerSelectionError' || 
+        error.name === 'MongoServerSelectionError' ||
+        (error.message && error.message.includes('whitelist'))) {
+      console.error('');
+      console.error('🚨 IP 화이트리스트 문제입니다!');
+      console.error('');
+      console.error('해결 방법:');
+      console.error('1. MongoDB Atlas 웹사이트에 로그인하세요');
+      console.error('2. 왼쪽 메뉴에서 "Network Access"를 클릭하세요');
+      console.error('3. "Add IP Address" 버튼을 클릭하세요');
+      console.error('4. "Allow Access from Anywhere"를 선택하거나 "0.0.0.0/0"을 입력하세요');
+      console.error('5. "Confirm" 버튼을 클릭하세요');
+      console.error('');
+      console.error('또는 현재 Heroku 앱의 IP를 확인하여 추가할 수 있습니다.');
+      console.error('Heroku의 IP는 동적으로 변하므로 "0.0.0.0/0"을 사용하는 것이 가장 간단합니다.');
+      return false;
+    }
     
     // 주요 에러 원인 분석
     if (error.code === 'ECONNREFUSED') {
@@ -58,17 +77,13 @@ async function connectDB() {
       console.error('Heroku에서 설정: heroku config:set MONGO_URI=your_mongodb_uri');
     } else if (error.code === 'ETIMEDOUT' || error.code === 'ETIMEOUT') {
       console.error('원인: MongoDB 연결 시간 초과');
-      console.error('해결방법: MongoDB Atlas의 Network Access에서 Heroku IP를 허용했는지 확인해주세요.');
-      console.error('또는 MongoDB Atlas에서 "Allow Access from Anywhere" (0.0.0.0/0)를 설정해주세요.');
-    } else if (error.name === 'MongoServerSelectionError' || error.code === 'MongoNetworkError') {
-      console.error('원인: 네트워크 연결 문제 또는 IP 화이트리스트 문제');
-      console.error('해결방법:');
-      console.error('1. MongoDB Atlas의 Network Access에서 IP 주소를 허용해주세요.');
-      console.error('2. MongoDB Atlas에서 "Allow Access from Anywhere" (0.0.0.0/0)를 설정할 수 있습니다.');
-      console.error('3. MongoDB Atlas의 데이터베이스 사용자 비밀번호가 올바른지 확인해주세요.');
+      console.error('해결방법: MongoDB Atlas의 Network Access에서 IP를 허용해주세요.');
     } else if (error.message && error.message.includes('authentication')) {
       console.error('원인: 인증 실패');
       console.error('해결방법: MongoDB Atlas의 사용자 이름과 비밀번호를 확인해주세요.');
+    } else {
+      console.error('원인: 알 수 없는 연결 오류');
+      console.error('전체 에러 정보:', error);
     }
     
     return false;
