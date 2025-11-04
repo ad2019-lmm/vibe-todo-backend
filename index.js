@@ -39,8 +39,16 @@ async function connectDB() {
   try {
     console.log('MongoDB 연결 시도 중...');
     console.log('연결 URI:', MONGODB_URI.replace(/\/\/.*@/, '//***:***@')); // 비밀번호 숨김
+    
+    // MongoDB URI 형식 검증
+    if (!MONGODB_URI || MONGODB_URI === 'mongodb://localhost:27017/todo') {
+      console.error('⚠️ 경고: 기본 로컬 MongoDB URI를 사용하고 있습니다.');
+      console.error('Heroku에서는 반드시 환경변수 MONGO_URI를 설정해야 합니다.');
+    }
+    
     await mongoose.connect(MONGODB_URI, mongooseOptions);
     console.log('✅ MongoDB 연결 성공');
+    console.log('연결된 데이터베이스:', mongoose.connection.name);
     return true;
   } catch (error) {
     console.error('❌ MongoDB 연결 실패:');
@@ -51,19 +59,21 @@ async function connectDB() {
     // IP 화이트리스트 문제 체크 (가장 흔한 Heroku 문제)
     if (error.name === 'MongooseServerSelectionError' || 
         error.name === 'MongoServerSelectionError' ||
-        (error.message && error.message.includes('whitelist'))) {
+        (error.message && (error.message.includes('whitelist') || error.message.includes('whitelisted')))) {
       console.error('');
       console.error('🚨 IP 화이트리스트 문제입니다!');
       console.error('');
-      console.error('해결 방법:');
-      console.error('1. MongoDB Atlas 웹사이트에 로그인하세요');
-      console.error('2. 왼쪽 메뉴에서 "Network Access"를 클릭하세요');
-      console.error('3. "Add IP Address" 버튼을 클릭하세요');
-      console.error('4. "Allow Access from Anywhere"를 선택하거나 "0.0.0.0/0"을 입력하세요');
-      console.error('5. "Confirm" 버튼을 클릭하세요');
+      console.error('⚠️ 중요: MongoDB Atlas에서 설정이 완료되었다면 몇 분 기다려주세요.');
+      console.error('   설정 반영까지 1-2분 정도 소요될 수 있습니다.');
       console.error('');
-      console.error('또는 현재 Heroku 앱의 IP를 확인하여 추가할 수 있습니다.');
-      console.error('Heroku의 IP는 동적으로 변하므로 "0.0.0.0/0"을 사용하는 것이 가장 간단합니다.');
+      console.error('MongoDB Atlas 설정 확인 방법:');
+      console.error('1. https://cloud.mongodb.com 접속 후 로그인');
+      console.error('2. 프로젝트 선택 → 왼쪽 메뉴 "Network Access" 클릭');
+      console.error('3. IP 목록에 "0.0.0.0/0" 또는 "Allow Access from Anywhere"가 있는지 확인');
+      console.error('4. 없다면 "Add IP Address" 클릭 → "Allow Access from Anywhere" 선택 → "Confirm"');
+      console.error('');
+      console.error('현재 설정된 MongoDB URI 형식:', MONGODB_URI.substring(0, 30) + '...');
+      console.error('연결하려는 클러스터:', MONGODB_URI.match(/@([^/]+)/)?.[1] || '확인 불가');
       return false;
     }
     
