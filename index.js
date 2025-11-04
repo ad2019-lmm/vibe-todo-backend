@@ -8,7 +8,6 @@ const todoRoutes = require('./routes/todos');
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/todo';
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/todo';
 
 // 환경변수 로드 확인 (디버깅용)
 console.log('환경변수 확인:');
